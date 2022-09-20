@@ -1,0 +1,141 @@
+---
+title: "Final Project: Progress Report"
+date: 03/27/2022
+
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    theme: flatly
+---
+
+# Overview
+
+> In this progress report, you'll show some intermediate results of your final project. (Note: This milestone is considered as part of the project management. The grades are only tentative. You should focus on getting some progress. Your final project outcome will outweight the intermediate results.)
+
+0. (5%) Fill the basic information
+
+    * Project title: Detect Group Bias on Building COVID-19 Anti-vax NLP Models
+    * Repository: https://github.com/class-data-mining-master/2022-spring-fml-project-reddit_antivax
+    * Team member: Huang, Sheng-Tai (email: shengtai.huang@pitt.edu)
+
+1. (40%) Extend your abstract, describe your project in more details. It should be 300--500 words in length providing:
+    + your project goal, or the problem you plan to work on; 
+    + (motivation and significance) why the problem is interesting and/or important; 
+    + the approach you plan to take, including what data mining tasks you will perform, and what potential techniques you will try; 
+    + what dataset you plan to use and how you will get the data (if the data is publicly available, provide the exact reference to the data; otherwise, provide a description about the data source).
+
+2. (30%) Give some preliminary description or analysis about your dataset(s). You should have early numbers or a figure in this report. This part can be short or long, depending on your actual progress. 
+
+3. (25%) The following questions are design to help you manage the progress in doing the final project. Your answers don't need to be long or detailed but will show that you have a plan to address them in your final report.
+    a) What do you try to accomplish in this project? What have you done so far?
+    To validate whether word use can expose personal information such as political stances and gender, and whether this will influence models to make predictions. Now I 
+    b) What are the strengths/novelty of your proposed idea? Why is the problem challenging?
+    Since the antivax detection only based on text and without any demographic information, it seems to be free from group disparity. However, research have shown that people from specific groups might be more likely to join the antivax campaign, and thus 
+    
+    c) How will you evaluate your method(s)? What are the performance measures and baseline methods?
+    d) Have you found any the research or works related to your project/problem/data? Where do you find the related work? 
+    
+    
+    e) Are there any challenges you encounter so far? How do you plan to solve it?
+
+```{r document_setup, echo=F, message=F, warning=F}
+# This chunk can include things you need for the rest of the document
+library(data.table)
+library('ggplot2') ## most of the time you will need ggplot
+theme_set(theme_bw()) # change the default ggplot theme to black-and-white
+
+knitr::opts_chunk$set(
+  echo=T, ## show your R code chunk
+  message = F, ## hide the message
+  warning = F, ## hide the warning
+  autodep = T ## make sure your separate code chunks can find the dependencies (from other code chunk)
+)
+```
+
+# 0. Fill the basic information
+
+# 1. Extended abstract 
+In this project, I aim at investigating whether an COVID-19 anti-vax detection classifier based on an NLP model will have different model performance in terms of accuracy on different groups of people such as political stances and gender. Moreover, to investigate the group disparity, explainable algorithms can help on this purpose to uncover the learned representations in the NLP model.
+
+Previous research based on survey data [1, 5] suggests that conservatives and females were more likely to join the COVID-19 anti-vax campaign. Furthermore, although unrelated to COVID-19 anti-vax, [7] used account names to infer user gender and suggest that females are more likely to be anti-vaxxers, and the results of [6] show that conservatives or Republicans are more likely to be COVID-19 anti-vaxxers to libertarians or Democrats. However, since [4] indicates that word use on social media might potentially expose users’ gender and [6] shows that political stances can be easily detected from words. Therefore, this project is formed to the following 2 research questions.
+
+RQ1: Are conservatives’ and females’ posts that are not anti-vax tend to be mistakenly labeled as anti-vax?
+
+RQ2: If those groups tend to be mistakenly labeled as anti-vax, is this caused by the model having learned specific terms that are unrelated to anti-vax as shortcut representations?
+
+The NLP model used in this project will be the BERT since it is the most widely-used language model, and exBERT[3], which enables BERT to have model explanations, will be used to discover whether there are shortcut representations. In detail, data from [2] ([GitHub](https://github.com/SakibShahriar95/ANTiVax)) will be used to train the NLP model for anti-vax detection, which has 15,073 Tweets collected between November, 2020 and July, 2021 with labeling whether anti-vax or not. For computing accuracy and group disparity on predicting COVID-19 anti-vax posts, Facebook posts collected by Crowdtangle API are used since it is more reliable to infer the personal information from the groups the users belong to. The corpora is composed of COVID-19 vaccine related posts in public groups and fan pages by using the search term “vaccin”, and the collected time interval of data is the same as the Twitter data used to train the NLP model.
+
+#### References
+[1] Germani, F., & Biller-Andorno, N. (2021). The anti-vaccination infodemic on social media: A behavioral analysis. PloS one, 16(3), e0247642.  
+[2] Hayawi, K., Shahriar, S., Serhani, M. A., Taleb, I., & Mathew, S. S. (2022). ANTi-Vax: a novel Twitter dataset for COVID-19 vaccine misinformation detection. Public health, 203, 23-30.  
+[3] Hoover, B., Strobelt, H., & Gehrmann, S. (2019). exbert: A visual analysis tool to explore learned representations in transformers models. arXiv preprint arXiv:1910.05276.  
+[4] Miller, Z., Dickinson, B., & Hu, W. (2012). Gender prediction on twitter using stream algorithms with n-gram character features.  
+[5] Roberts, H. A., Clark, D. A., Kalina, C., Sherman, C., Brislin, S., Heitzeg, M. M., & Hicks, B. M. (2022). To vax or not to vax: Predictors of anti-vax attitudes and COVID-19 vaccine hesitancy prior to widespread vaccine availability. Plos one, 17(2), e0264019.  
+[6] Quintana, I. O., Cheong, M., Alfano, M., Reimann, R., & Klein, C. (2022). Automated clustering of COVID-19 anti-vaccine discourse on Twitter. arXiv preprint arXiv:2203.01549.  
+[7] Smith, N., & Graham, T. (2019). Mapping the anti-vaccination movement on Facebook. Information, Communication & Society, 22(9), 1310-1327.  
+
+# 2. Preliminary results
+
+```{r}
+## YOUR CODE HERE
+antivax_label <- fread("Labeled/VaxMisinfoData.csv", data.table = F)
+table(antivax_label$is_misinfo)
+df <- fread("raw_data/fb_vaccin_all.csv", na.strings = "N/A", data.table = F)
+mix_col <- c("Total Interactions", "Sponsor Name", "Sponsor Category",
+       "Total Interactions (weighted  —  Likes 1x Shares 1x Comments 1x Love 1x Wow 1x Haha 1x Sad 1x Angry 1x Care 1x )",
+       "Overperforming Score")
+for (mc in mix_col) {
+  df[, mc] <- as.numeric(gsub(pattern = ",",
+                              replacement = "",
+                              x = df[, mc]))
+}
+
+df <- df[df$"Page Admin Top Country" == "US", ]
+
+sum(grepl(pattern = "mother|mom|mommy|mama", x = df$"Page Name", ignore.case = T))
+
+df$"Page Name"[grepl(pattern = "mother|mom|mommy|mama", x = df$"Page Name", ignore.case = T)]
+
+df$"Page Name"[grepl(pattern = "parent", x = df$"Page Name", ignore.case = T)]
+
+sum(grepl(pattern = "father|dad|daddy|papa|", x = df$"Page Name", ignore.case = T))
+
+df$"Page Name"[grepl(pattern = "father|dad|daddy|papa", x = df$"Page Name", ignore.case = T)]
+
+sum(grepl(pattern = "father|dad|daddy|papa", x = df$"Message", ignore.case = T))
+
+df$Message[grepl(pattern = "father|dad|daddy|papa", x = df$Message, ignore.case = T)]
+
+sum(grepl(pattern = "liberterian|democrat", x = df$"Page Name", ignore.case = T))
+df$"Page Name"[grepl(pattern = "liberterian|democrat", x = df$"Page Name", ignore.case = T)]
+
+sum(grepl(pattern = "conservative|republican", x = df$"Page Name", ignore.case = T))
+sum(df$"Page Admin Top Country" == "US")
+
+df <- lapply(fb_csvs, function(x) {
+  df <- fread(x, na.strings = "N/A", data.table = F)
+  df <- df[!is.na(df$"Likes at Posting"), ]
+  
+  for (mc in mix_col) {
+    df[, mc] <- as.numeric(gsub(pattern = ",",
+                                replacement = "",
+                                x = df[, mc]))
+  }
+  df$"Page Created" <- as.POSIXct(df$"Page Created")
+  df$"Post Created Date" <- as.Date(df$"Post Created Date")
+  df$"Facebook Id" <- NULL
+  return(df)
+})
+df <- rbindlist(df)
+```
+
+# 3. Your answers to Problem 3.
+a) The project goal is to discover whether there is group disparity by using the BERT model as anti-vax detection classifier. Recently, all data, models, and related work are already collected. If there is enough time, I will also work on finding ways to solve the learned shortcut representations.
+b) However, especially from COVID-19 anti-vax related research, political stances are easy to detect since people usually discuss these topics by exposing their political stances, and there is also some research suggesting that gender can be detected from writing styles of their social media posts. Therefore, this project can potentially build an COVID-19 anti-vax detection model without bias against those groups, which can potentially be more convincible for normal users to use in practice.
+c) Since the TPR and FPR have the same effect, the accuracy will be the only concerned group disparity measurement in this project.
+d) The above references are the related work I found, and those papers are discovered by searching on Google Scholar.
+e) The first challenge was while I was looking for suitable social media platforms for collecting data. Since I wanted to use community/group/page information to use as political stances and gender labels, rather than using a network to infer political stances by neighbors or inferring gender based on their account name, which can only handle American names, Reddit is my first candidate for collecting data. However, after going through the collected data, only Conservative Redditors tended to post COVID-19 anti-vax posts, and thus I turned to Facebook at the last minute. The second challenge is that research with conclusions that conservatives and females tend to join the anti-vax campaign are based on surveys, which have more abundant attributes, but for corpora, the difference between groups can only based on their writing styles, and as far as I searched, there is no research discuss the group disparity of anti-vax detection classifiers. Therefore, more literature reviews are needed to see whether there is directly related work that might be helpful to my project.
+    
+
